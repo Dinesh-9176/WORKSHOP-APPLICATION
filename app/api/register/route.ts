@@ -82,7 +82,10 @@ export async function POST(request: NextRequest) {
 
     return Response.json({ id }, { status: 201 })
   } catch (err) {
-    console.error('Registration error:', err)
-    return Response.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Registration error details:', err)
+    return Response.json({ 
+      error: 'Internal server error', 
+      details: err instanceof Error ? err.message : String(err) 
+    }, { status: 500 })
   }
 }
