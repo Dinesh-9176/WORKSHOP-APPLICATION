@@ -2,13 +2,10 @@ import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { registrations } from '@/lib/db/schema'
 import { registerSchema } from '@/lib/validations'
-import { randomUUID } from 'crypto'
-import { writeFile, mkdir } from 'fs/promises'
-import path from 'path'
+import { supabase } from '@/lib/supabase'
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR
-  ? path.resolve(process.env.UPLOAD_DIR)
-  : path.resolve('./uploads')
+// Storage bucket name
+const BUCKET = 'proofs'
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,14 +45,23 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Invalid file type. JPG/PNG/WebP only.' }, { status: 400 })
     }
 
-    const id = randomUUID()
+    const id = crypto.randomUUID()
     const ext = proof.name.split('.').pop()?.toLowerCase() || 'jpg'
     const filename = `${id}.${ext}`
-    const filePath = path.join(UPLOAD_DIR, filename)
 
-    await mkdir(UPLOAD_DIR, { recursive: true })
     const buffer = Buffer.from(await proof.arrayBuffer())
-    await writeFile(filePath, buffer)
+    
+    const { error: uploadError } = await supabase.storage
+      .from(BUCKET)
+      .upload(filename, buffer, {
+        contentType: proof.type,
+        upsert: false
+      })
+
+    if (uploadError) {
+      console.error('Storage error:', uploadError)
+      return Response.json({ error: 'Failed to upload proof.' }, { status: 500 })
+    }
 
     const amountPaise = data.lunchOptin ? 60000 : 50000
 

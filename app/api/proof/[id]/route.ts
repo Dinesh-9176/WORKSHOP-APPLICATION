@@ -3,12 +3,9 @@ import { getAdminFromCookie } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { registrations } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
-import { readFile } from 'fs/promises'
-import path from 'path'
+import { supabase } from '@/lib/supabase'
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR
-  ? path.resolve(process.env.UPLOAD_DIR)
-  : path.resolve('./uploads')
+const BUCKET = 'proofs'
 
 export async function GET(
   _req: NextRequest,
@@ -31,12 +28,18 @@ export async function GET(
     return new Response('Not found', { status: 404 })
   }
 
-  const safeName = path.basename(reg.proofPath)
-  const filePath = path.join(UPLOAD_DIR, safeName)
-
   try {
-    const buffer = await readFile(filePath)
-    const ext = safeName.split('.').pop()?.toLowerCase()
+    const { data: fileData, error: downloadError } = await supabase.storage
+      .from(BUCKET)
+      .download(reg.proofPath)
+
+    if (downloadError || !fileData) {
+      console.error('Download error:', downloadError)
+      return new Response('File not found', { status: 404 })
+    }
+
+    const buffer = Buffer.from(await fileData.arrayBuffer())
+    const ext = reg.proofPath.split('.').pop()?.toLowerCase()
     const mimeMap: Record<string, string> = {
       jpg: 'image/jpeg',
       jpeg: 'image/jpeg',
@@ -47,7 +50,8 @@ export async function GET(
     return new Response(buffer, {
       headers: { 'Content-Type': contentType, 'Cache-Control': 'private, max-age=3600' },
     })
-  } catch {
-    return new Response('File not found', { status: 404 })
+  } catch (err) {
+    console.error('Proof retrieval error:', err)
+    return new Response('Internal server error', { status: 500 })
   }
 }
