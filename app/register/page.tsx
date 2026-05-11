@@ -226,20 +226,15 @@ export default function RegisterPage() {
                 <div className="rounded-2xl bg-[#14141f] border border-white/8 p-6 text-center space-y-4">
                   <p className="text-white/40 text-xs font-mono uppercase tracking-widest">Pay via Google Pay / UPI</p>
 
-                  {/* QR placeholder — replace with <Image src="/gpay-qr.png"> when ready */}
-                  <div className="mx-auto w-52 h-52 rounded-2xl border-2 border-dashed border-white/15 bg-white/3 flex flex-col items-center justify-center gap-2">
-                    <div className="w-10 h-10 rounded-xl bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center">
-                      <Zap className="w-5 h-5 text-cyan-400" />
-                    </div>
-                    <p className="text-white/40 text-xs text-center px-4">
-                      Drop your GPay QR image at<br />
-                      <code className="text-cyan-400/70 text-[10px]">public/gpay-qr.png</code>
-                    </p>
+                  {/* QR Image */}
+                  <div className="mx-auto w-52 h-52 rounded-2xl overflow-hidden border border-white/10 bg-white p-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/gpay-qr.png" alt="GPay QR Code" className="w-full h-full object-contain" />
                   </div>
 
                   <div className="space-y-1">
-                    <p className="text-white font-semibold text-lg font-mono">UPI ID: <span className="text-cyan-400">your-upi@bank</span></p>
-                    <p className="text-white/40 text-sm">Payee: Ignit Technical Solutions</p>
+                    <p className="text-white font-semibold text-lg font-mono">UPI ID: <span className="text-cyan-400">gowthamanman51-1@okicici</span></p>
+                    <p className="text-white/40 text-sm">Payee: Gowthaman Man</p>
                   </div>
 
                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-400/10 border border-cyan-400/20">
