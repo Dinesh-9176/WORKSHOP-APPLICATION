@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { registrations } from '@/lib/db/schema'
 import { registerSchema } from '@/lib/validations'
-import { supabase } from '@/lib/supabase'
+import { getSupabase } from '@/lib/supabase'
 import crypto from 'crypto'
 
 // Storage bucket name
@@ -11,6 +11,7 @@ const BUCKET = 'proofs'
 export async function POST(request: NextRequest) {
   let step = 'starting'
   try {
+    const supabase = getSupabase()
     const formData = await request.formData()
     step = 'parsing_formdata'
 

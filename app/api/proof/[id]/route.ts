@@ -3,7 +3,7 @@ import { getAdminFromCookie } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { registrations } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
-import { supabase } from '@/lib/supabase'
+import { getSupabase } from '@/lib/supabase'
 
 const BUCKET = 'proofs'
 
@@ -17,6 +17,7 @@ export async function GET(
   }
 
   const { id } = await params
+  const supabase = getSupabase()
   if (!/^[0-9a-f-]{36}$/i.test(id)) {
     return new Response('Invalid ID', { status: 400 })
   }
