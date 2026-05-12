@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { registrations } from '@/lib/db/schema'
 import { registerSchema } from '@/lib/validations'
 import { supabase } from '@/lib/supabase'
+import crypto from 'crypto'
 
 // Storage bucket name
 const BUCKET = 'proofs'
