@@ -9,8 +9,10 @@ import crypto from 'crypto'
 const BUCKET = 'proofs'
 
 export async function POST(request: NextRequest) {
+  let step = 'starting'
   try {
     const formData = await request.formData()
+    step = 'parsing_formdata'
 
     const raw = {
       fullName: formData.get('fullName'),
@@ -37,21 +39,13 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Payment screenshot is required.' }, { status: 400 })
     }
 
-    if (proof.size > 5 * 1024 * 1024) {
-      return Response.json({ error: 'Screenshot too large. Max 5 MB.' }, { status: 400 })
-    }
-
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
-    if (!allowedTypes.includes(proof.type)) {
-      return Response.json({ error: 'Invalid file type. JPG/PNG/WebP only.' }, { status: 400 })
-    }
-
+    step = 'preparing_upload'
     const id = crypto.randomUUID()
     const ext = proof.name.split('.').pop()?.toLowerCase() || 'jpg'
     const filename = `${id}.${ext}`
-
     const buffer = Buffer.from(await proof.arrayBuffer())
     
+    step = 'uploading_to_storage'
     const { error: uploadError } = await supabase.storage
       .from(BUCKET)
       .upload(filename, buffer, {
@@ -61,39 +55,47 @@ export async function POST(request: NextRequest) {
 
     if (uploadError) {
       console.error('Storage error:', uploadError)
-      return Response.json({ error: 'Failed to upload proof.' }, { status: 500 })
+      return Response.json({ 
+        error: 'Failed to upload proof.', 
+        details: uploadError.message,
+        step 
+      }, { status: 500 })
     }
 
+    step = 'inserting_to_db'
     const amountPaise = data.lunchOptin ? 60000 : 50000
 
-    const { error: dbError } = await supabase
-      .from('registrations')
-      .insert({
+    try {
+      await db.insert(registrations).values({
         id,
-        full_name: data.fullName,
+        fullName: data.fullName,
         email: data.email,
         phone: data.phone,
         category: data.category,
         organization: data.organization,
-        lunch_optin: data.lunchOptin,
-        amount_paise: amountPaise,
-        upi_txn_ref: data.upiTxnRef,
-        proof_path: filename,
-        proof_uploaded_at: new Date().toISOString(),
+        lunchOptin: data.lunchOptin,
+        amountPaise,
+        upiTxnRef: data.upiTxnRef,
+        proofPath: filename,
+        proofUploadedAt: new Date(),
         status: 'awaiting_verification',
       })
-
-    if (dbError) {
-      console.error('Database error:', dbError)
-      return Response.json({ error: 'Failed to save registration.', details: dbError.message }, { status: 500 })
+    } catch (dbErr) {
+      console.error('Database error:', dbErr)
+      return Response.json({ 
+        error: 'Failed to save to database.', 
+        details: dbErr instanceof Error ? dbErr.message : String(dbErr),
+        step
+      }, { status: 500 })
     }
 
     return Response.json({ id }, { status: 201 })
   } catch (err) {
-    console.error('Registration error details:', err)
+    console.error('Unexpected error at step ' + step + ':', err)
     return Response.json({ 
       error: 'Internal server error', 
-      details: err instanceof Error ? err.message : String(err) 
+      details: err instanceof Error ? err.message : String(err),
+      step
     }, { status: 500 })
   }
 }
