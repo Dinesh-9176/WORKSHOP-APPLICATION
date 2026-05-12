@@ -65,20 +65,27 @@ export async function POST(request: NextRequest) {
 
     const amountPaise = data.lunchOptin ? 60000 : 50000
 
-    await db.insert(registrations).values({
-      id,
-      fullName: data.fullName,
-      email: data.email,
-      phone: data.phone,
-      category: data.category,
-      organization: data.organization,
-      lunchOptin: data.lunchOptin,
-      amountPaise,
-      upiTxnRef: data.upiTxnRef,
-      proofPath: filename,
-      proofUploadedAt: new Date(),
-      status: 'awaiting_verification',
-    })
+    const { error: dbError } = await supabase
+      .from('registrations')
+      .insert({
+        id,
+        full_name: data.fullName,
+        email: data.email,
+        phone: data.phone,
+        category: data.category,
+        organization: data.organization,
+        lunch_optin: data.lunchOptin,
+        amount_paise: amountPaise,
+        upi_txn_ref: data.upiTxnRef,
+        proof_path: filename,
+        proof_uploaded_at: new Date().toISOString(),
+        status: 'awaiting_verification',
+      })
+
+    if (dbError) {
+      console.error('Database error:', dbError)
+      return Response.json({ error: 'Failed to save registration.', details: dbError.message }, { status: 500 })
+    }
 
     return Response.json({ id }, { status: 201 })
   } catch (err) {
